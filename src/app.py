@@ -6,14 +6,14 @@ import math
 
 # راه‌اندازی فلسک و تنظیمات
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})  # تنظیم دقیق‌تر CORS
+CORS(app, resources={r"/api/*": {"origins": "*"}})  #  CORS تنظیم  
 
 # تنظیمات پایگاه داده
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# راه‌اندازی پایگاه داده به روش جدید (سازگار با نسخه‌های جدید)
+#  راه‌اندازی پایگاه داده
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -34,7 +34,7 @@ class User(db.Model):
             'job': self.job
         }
 
-# API برای دریافت لیست کاربران با قابلیت pagination و فیلتر
+# و فیلتر pagination برای دریافت لیست کاربران با قابلیت API 
 @app.route('/api/users', methods=['GET'])
 def get_users():
     # دریافت پارامترهای صفحه‌بندی
@@ -47,7 +47,7 @@ def get_users():
     job_filter = request.args.get('job', '')
     age_filter = request.args.get('age', '')
     
-    # شروع کوئری
+    
     query = User.query
     
     # اعمال فیلترها
@@ -80,13 +80,13 @@ def get_users():
     
     return jsonify(response)
 
-# API برای دریافت یک کاربر با ID مشخص
+# مشخص ID برای دریافت یک کاربر با API  
 @app.route('/api/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
     user = User.query.get_or_404(user_id)
     return jsonify(user.to_dict())
 
-# API برای افزودن کاربر جدید
+# برای افزودن کاربر جدید API
 @app.route('/api/users', methods=['POST'])
 def add_user():
     data = request.get_json()
@@ -109,7 +109,7 @@ def add_user():
     
     return jsonify(new_user.to_dict()), 201
 
-# API برای ویرایش کاربر
+# برای ویرایش کاربر API
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     user = User.query.get_or_404(user_id)
@@ -130,7 +130,7 @@ def update_user(user_id):
     
     return jsonify(user.to_dict())
 
-# API برای حذف کاربر
+# برای حذف کاربر API 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
@@ -174,5 +174,5 @@ def home():
 # اجرای برنامه
 if __name__ == '__main__':
     with app.app_context():
-        initialize_database()  # راه‌اندازی دیتابیس قبل از اجرای سرور
+        initialize_database()  
     app.run(debug=True)
