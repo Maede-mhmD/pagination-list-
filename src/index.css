@@ -1,13 +1,167 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.container {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+.title {
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 24px;
+}
+
+.filter-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+  align-items: center;
+  background-color: #a5daea;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-field label {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon input {
+  padding: 6px 30px 6px 30px;
+  border: 1px solid #17087a;
+  border-radius: 4px;
+}
+
+.input-icon svg {
+  position: absolute;
+  left: 8px;
+  color: rgb(27, 2, 2);
+}
+
+.clear-btn {
+  padding: 6px 12px;
+  background-color: #0f93b7;
+  border:#17087a ;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.clear-btn:hover {
+  background-color: #d2121f;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse:collapse ;
+  margin-top: 10px;
+}
+
+thead tr {
+  background-color: #eee;
+  font-weight: bold;
+}
+
+td, th {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: right;
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.page-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.page-buttons button {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.page-buttons button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.page-buttons button:disabled {
+  background-color: #eee;
+  color: #999;
+  cursor: not-allowed;
+}
+
+/* اضافه کردن به فایل index.css */
+
+.connection-status {
+  margin: 10px 0;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.connection-status.success {
+  background-color: #e6f4ea;
+  color: #137333;
+  border: 1px solid #34a853;
+}
+
+.connection-status.error {
+  background-color: #fce8e6;
+  color: #c5221f;
+  border: 1px solid #ea4335;
+}
+
+.retry-section {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.retry-btn {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.retry-btn:hover {
+  background-color: #2b7de9;
 }
