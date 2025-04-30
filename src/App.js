@@ -1,4 +1,3 @@
-// App.js - با تغییرات برای مدیریت بهتر خطاها
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import "./index.css";
@@ -14,7 +13,6 @@ export default function DataTable() {
   const [connectionStatus, setConnectionStatus] = useState('در حال اتصال...');
   
   const itemsPerPage = 5;
-  // برای اطمینان از آدرس صحیح API
   const apiUrl = "http://127.0.0.1:5000/api/users";
 
   // تست اولیه اتصال به سرور
@@ -38,11 +36,11 @@ export default function DataTable() {
     testConnection();
   }, []);
 
-  // تابع برای دریافت داده‌ها از API با مدیریت بهتر خطاها
+  // API تابع برای دریافت داده‌ها از 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // ساخت پارامترهای URL برای فیلترها و صفحه‌بندی
+      // برای فیلترها و صفحه‌بندی URL ساخت پارامترهای  
       const queryParams = new URLSearchParams({
         page: currentPage,
         per_page: itemsPerPage,
@@ -104,11 +102,6 @@ export default function DataTable() {
     <div className="container" dir="rtl">
       <h1 className="title">لیست اطلاعات کاربران</h1>
       
-      {/* نمایش وضعیت اتصال */}
-      {/* <div className={`connection-status ${connectionStatus.includes('خطا') ? 'error' : 'success'}`}>
-        {connectionStatus}
-      </div> */}
-
       <div className="filter-box">
         <div className="filter-field">
           <label>نام:</label>
@@ -159,6 +152,7 @@ export default function DataTable() {
         </div>
 
         <button className="clear-btn" onClick={clearFilters}>
+          
           پاک کردن فیلترها
         </button>
       </div>
