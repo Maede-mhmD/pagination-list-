@@ -1,19 +1,18 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 import os
 import math
 
-# راه‌اندازی فلسک و تنظیمات
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {"origins": "*"}})  #  CORS تنظیم  
+
 
 # تنظیمات پایگاه داده
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-#  راه‌اندازی پایگاه داده
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -24,33 +23,52 @@ class User(db.Model):
     age = db.Column(db.Integer, nullable=False)
     city = db.Column(db.String(100), nullable=False)
     job = db.Column(db.String(100), nullable=False)
-    
+    isActive = db.Column(db.Boolean, default=True)  
+
     def to_dict(self):
         return {
             'id': self.id,
             'name': self.name,
             'age': self.age,
             'city': self.city,
-            'job': self.job
+            'job': self.job,
+            'isActive': self.isActive 
         }
+    
+class Log(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, nullable=False)
+    action = db.Column(db.String(100), nullable=False)
+    timestamp = db.Column(db.DateTime, server_default=db.func.now())
+    details = db.Column(db.Text)
 
-# و فیلتر pagination برای دریافت لیست کاربران با قابلیت API 
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'action': self.action,
+            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'details': self.details
+        }  
+
+def log_action(user_id, action, details=None):
+    log = Log(user_id=user_id, action=action, details=details)
+    db.session.add(log)
+    db.session.commit()
+  
+
 @app.route('/api/users', methods=['GET'])
 def get_users():
-    # دریافت پارامترهای صفحه‌بندی
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
     
-    # دریافت پارامترهای فیلتر
     name_filter = request.args.get('name', '')
     city_filter = request.args.get('city', '')
     job_filter = request.args.get('job', '')
     age_filter = request.args.get('age', '')
     
-    
     query = User.query
     
-    # اعمال فیلترها
     if name_filter:
         query = query.filter(User.name.ilike(f'%{name_filter}%'))
     if city_filter:
@@ -60,16 +78,12 @@ def get_users():
     if age_filter:
         query = query.filter(User.age == age_filter)
     
-    # دریافت تعداد کل آیتم‌های فیلتر شده
     total_items = query.count()
     
-    # محاسبه تعداد کل صفحات
     total_pages = math.ceil(total_items / per_page)
     
-    # دریافت آیتم‌های صفحه فعلی
     users = query.paginate(page=page, per_page=per_page)
     
-    # آماده‌سازی پاسخ
     response = {
         'items': [user.to_dict() for user in users.items],
         'page': page,
@@ -80,42 +94,34 @@ def get_users():
     
     return jsonify(response)
 
-# مشخص ID برای دریافت یک کاربر با API  
 @app.route('/api/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
     user = User.query.get_or_404(user_id)
     return jsonify(user.to_dict())
 
-# برای افزودن کاربر جدید API
 @app.route('/api/users', methods=['POST'])
 def add_user():
     data = request.get_json()
-    
-    # بررسی وجود داده‌های ضروری
     if not all(key in data for key in ['name', 'age', 'city', 'job']):
         return jsonify({'error': 'اطلاعات ناقص است'}), 400
     
-    # ایجاد کاربر جدید
     new_user = User(
         name=data['name'],
         age=data['age'],
         city=data['city'],
-        job=data['job']
+        job=data['job'],
+        isActive = data.get('isActive', True)
     )
-    
-    # ذخیره در پایگاه داده
+
     db.session.add(new_user)
     db.session.commit()
-    
     return jsonify(new_user.to_dict()), 201
 
-# برای ویرایش کاربر API
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
 def update_user(user_id):
     user = User.query.get_or_404(user_id)
     data = request.get_json()
     
-    # بروزرسانی فیلدها
     if 'name' in data:
         user.name = data['name']
     if 'age' in data:
@@ -125,29 +131,45 @@ def update_user(user_id):
     if 'job' in data:
         user.job = data['job']
     
-    # ذخیره تغییرات
     db.session.commit()
     
     return jsonify(user.to_dict())
 
-# برای حذف کاربر API 
+
+@app.route('/api/users/<int:user_id>/active', methods=['PATCH'])
+def update_user_active(user_id):
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    if 'isActive' not in data:
+        return jsonify({'error': 'مقدار isActive ارسال نشده است'}), 400
+    user.isActive = data['isActive']
+    db.session.commit()
+    log_action(user_id, "change_active_status", f"set isActive to {data['isActive']}")
+    return jsonify(user.to_dict())
+
+
+@app.route('/api/users/<int:user_id>', methods=['PATCH'])
+def patch_user(user_id):
+    user = User.query.get_or_404(user_id)
+    data = request.get_json()
+    if 'isActive' in data:
+        user.isActive = data['isActive']
+    db.session.commit()
+    return jsonify(user.to_dict())
+
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
-    # حذف کاربر
     db.session.delete(user)
     db.session.commit()
     
     return jsonify({'message': 'کاربر با موفقیت حذف شد'})
 
-# تابع برای افزودن داده‌های نمونه
 def initialize_database():
     db.create_all()
     
-    # بررسی وجود داده در پایگاه داده
     if User.query.count() == 0:
-        # داده‌های نمونه (همان داده‌های موجود در فرانت‌اند)
         sample_users = [
             User(id=1, name="محمد امینی", age=28, city="تهران", job="برنامه‌نویس"),
             User(id=2, name="سارا محمدی", age=34, city="اصفهان", job="طراح"),
@@ -163,7 +185,6 @@ def initialize_database():
             User(id=12, name="شیما صادقی", age=38, city="تهران", job="حسابدار"),
         ]
         
-        # افزودن داده‌ها به پایگاه داده
         db.session.bulk_save_objects(sample_users)
         db.session.commit()
 
@@ -171,7 +192,12 @@ def initialize_database():
 def home():
     return jsonify({"message": "به API کاربران خوش آمدید!"})
 
-# اجرای برنامه
+# مشاهده لاگ‌ها
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    logs = Log.query.order_by(Log.timestamp.desc()).all()
+    return jsonify([log.to_dict() for log in logs])    
+
 if __name__ == '__main__':
     with app.app_context():
         initialize_database()  
