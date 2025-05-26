@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تاریخچه لاگ‌های سیستم</title>
+    <link rel="stylesheet" href="./LogsPage.css">
+</head>
+<body>
+    
+    <div class="logs-container">
+        <h1 class="logs-title">تاریخچه لاگ‌های سیستم</h1>
+        
+        <div class="logs-connection-status">اتصال به سرور برقرار است</div>
+        
+        <div class="logs-filter-box">
+            <div class="logs-filter-field">
+                <label>شناسه کاربر:</label>
+                <div class="logs-input-icon">
+                    <input type="text" placeholder="جستجو بر اساس شناسه کاربر">
+                    <span class="search-icon">🔍</span>
+                </div>
+            </div>
+            <div class="logs-filter-field">
+                <label>نوع عملیات:</label>
+                <div class="logs-input-icon">
+                    <input type="text" placeholder="جستجو بر اساس نوع عملیات">
+                    <span class="search-icon">🔍</span>
+                </div>
+            </div>
+            
+            <button class="logs-clear-btn">
+                پاک کردن فیلترها
+            </button>
+
+            <a href="/" class="logs-back-btn">
+                بازگشت به لیست کاربران
+            </a>
+        </div>
+
+        <div class="logs-table-wrapper">
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>ردیف</th>
+                        <th class="logs-sortable-header">
+                            شناسه لاگ
+                            <span class="sort-icon">▼</span>
+                        </th>
+                        <th class="logs-sortable-header">
+                            شناسه کاربر
+                            <span class="sort-icon">▼</span>
+                        </th>
+                        <th class="logs-sortable-header">
+                            نوع عملیات
+                            <span class="sort-icon">▼</span>
+                        </th>
+                        <th class="logs-sortable-header">
+                            تاریخ و زمان
+                            <span class="sort-icon">▼</span>
+                        </th>
+                        <th>جزئیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>101</td>
+                        <td>5</td>
+                        <td>change_active_status</td>
+                        <td>۱۴۰۴/۰۲/۲۸ ۱۴:۳۰:۲۲</td>
+                        <td>
+                            <div class="logs-details">
+                                set isActive to false
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>100</td>
+                        <td>3</td>
+                        <td>change_active_status</td>
+                        <td>۱۴۰۴/۰۲/۲۸ ۱۴:۲۸:۱۵</td>
+                        <td>
+                            <div class="logs-details">
+                                set isActive to true
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>99</td>
+                        <td>7</td>
+                        <td>change_active_status</td>
+                        <td>۱۴۰۴/۰۲/۲۷ ۱۶:۱۰:۰۵</td>
+                        <td>
+                            <div class="logs-details">
+                                set isActive to false
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="logs-pagination">
+            <span>
+                صفحه 1 از 5
+            </span>
+            <div class="logs-page-buttons">
+                <button disabled>ابتدا</button>
+                <button disabled>قبلی</button>
+                <button class="logs-active">1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>4</button>
+                <button>5</button>
+                <button>بعدی</button>
+                <button>انتها</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

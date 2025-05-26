@@ -1,7 +1,7 @@
 .container {
   max-width: 800px;
   margin: 40px auto;
-  padding: 20px;
+  padding: 5px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -14,7 +14,7 @@
 .filter-box {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 5px;
   margin-bottom: 20px;
   align-items: center;
   background-color: #a5daea;
@@ -174,6 +174,7 @@ td, th {
   border-radius: 4px;
   color: #ffffff;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .add-user-btn:hover {
@@ -234,8 +235,9 @@ td, th {
 }
 
 .add-user-btn-submit {
-  padding: 10px 0;
-  margin-top: 5px;
+  padding: 6px 4px;
+  max-width: 150px;
+  margin: 12px 12px;
   background: linear-gradient(90deg, #0f93b7 60%, #17087a 100%);
   color: #fff;
   border: none;
@@ -283,3 +285,46 @@ td, th {
   color: #4CAF50;
 }
 
+.loging-user-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 20px 20px;
+  background-color: #a5daea;
+  font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif ;
+  border-radius: 3px;
+  box-shadow: 12px #17087a;
+}
+
+.loging-user-btn {
+  padding: 6px 12px;
+  margin: 5px;
+  margin-top: 32px;
+  background-color: #0f93b7;
+  border:#17087a ;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.loging-user-btn:hover {
+  padding: 6px 12px;
+  background-color: #1bcb1e;
+}
+
+.back-to-main-page {
+  padding: 6px 4px;
+  max-width: 150px;
+  text-align: center;
+  margin: 0 6px;
+  background-color: #0f93b7;
+  border:#17087a ;
+  border-radius: 4px;
+  color: #ffffff;
+  cursor: pointer;
+  text-decoration: none;
+  margin-top: 10px;
+}

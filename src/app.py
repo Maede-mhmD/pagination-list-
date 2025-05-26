@@ -1,12 +1,15 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import math
+from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})  #  CORS تنظیم  
-
+app.secret_key = 'my-very-secret-key'
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "*"}})
 
 # تنظیمات پایگاه داده
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -23,7 +26,7 @@ class User(db.Model):
     age = db.Column(db.Integer, nullable=False)
     city = db.Column(db.String(100), nullable=False)
     job = db.Column(db.String(100), nullable=False)
-    isActive = db.Column(db.Boolean, default=True)  
+    isActive = db.Column(db.Boolean, default=True)
 
     def to_dict(self):
         return {
@@ -32,12 +35,36 @@ class User(db.Model):
             'age': self.age,
             'city': self.city,
             'job': self.job,
-            'isActive': self.isActive 
+            'isActive': self.isActive
         }
+
+class AdminUser(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    fullname = db.Column(db.String(150), nullable=False)
+    role = db.Column(db.String(50), default="user")
+    last_login = db.Column(db.DateTime)
     
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+        
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+        
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'fullname': self.fullname,
+            'role': self.role,
+            'last_login': self.last_login.isoformat() if self.last_login else None
+        }
+
 class Log(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, nullable=False)
+    affected_id = db.Column(db.Integer, nullable=True)
     action = db.Column(db.String(100), nullable=False)
     timestamp = db.Column(db.DateTime, server_default=db.func.now())
     details = db.Column(db.Text)
@@ -46,16 +73,61 @@ class Log(db.Model):
         return {
             'id': self.id,
             'user_id': self.user_id,
+            'affected_id': self.affected_id,
             'action': self.action,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
+            'timestamp': self.timestamp.isoformat() + 'Z' if self.timestamp else None,
             'details': self.details
-        }  
+        }
 
-def log_action(user_id, action, details=None):
-    log = Log(user_id=user_id, action=action, details=details)
-    db.session.add(log)
-    db.session.commit()
-  
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'ابتدا وارد شوید'}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+def log_action(user_id, action, affected_id=None, details=None):
+    try:
+        log = Log(
+            user_id=user_id,
+            action=action,
+            affected_id=affected_id,
+            details=details
+        )
+        db.session.add(log)
+        db.session.commit()
+    except Exception as e:
+        print(f"Logging failed: {e}")
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({'error': 'نام کاربری و رمز عبور ضروری است'}), 400
+    
+    user = AdminUser.query.filter_by(username=username).first()
+    
+    if user and user.check_password(password):
+        session['user_id'] = user.id
+        session['username'] = user.username
+        log_action(user.id, "login", details="ورود به سیستم")
+        return jsonify({
+            'message': 'ورود موفقیت‌آمیز بود',
+            'user': user.to_dict()
+        })
+    return jsonify({'error': 'نام کاربری یا رمز عبور اشتباه است'}), 401
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    if 'user_id' in session:
+        user_id = session['user_id']
+        session.clear()
+        log_action(user_id, "logout", details="خروج از سیستم")
+    return jsonify({'message': 'با موفقیت خارج شدید'})
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
@@ -76,10 +148,9 @@ def get_users():
     if job_filter:
         query = query.filter(User.job.ilike(f'%{job_filter}%'))
     if age_filter:
-        query = query.filter(User.age == age_filter)
+        query = query.filter(User.age.ilike(f"{age_filter}%"))
     
     total_items = query.count()
-    
     total_pages = math.ceil(total_items / per_page)
     
     users = query.paginate(page=page, per_page=per_page)
@@ -100,6 +171,7 @@ def get_user(user_id):
     return jsonify(user.to_dict())
 
 @app.route('/api/users', methods=['POST'])
+@login_required
 def add_user():
     data = request.get_json()
     if not all(key in data for key in ['name', 'age', 'city', 'job']):
@@ -110,14 +182,16 @@ def add_user():
         age=data['age'],
         city=data['city'],
         job=data['job'],
-        isActive = data.get('isActive', True)
+        isActive=data.get('isActive', True)
     )
 
     db.session.add(new_user)
     db.session.commit()
+    log_action(session['user_id'], "create_user", new_user.id, f"کاربر جدید با نام {new_user.name} ثبت شد")
     return jsonify(new_user.to_dict()), 201
 
 @app.route('/api/users/<int:user_id>', methods=['PUT'])
+@login_required
 def update_user(user_id):
     user = User.query.get_or_404(user_id)
     data = request.get_json()
@@ -132,73 +206,66 @@ def update_user(user_id):
         user.job = data['job']
     
     db.session.commit()
-    
+    log_action(session['user_id'], "update_user", user_id, f"اطلاعات کاربر به‌روزرسانی شد")
     return jsonify(user.to_dict())
-
-
-@app.route('/api/users/<int:user_id>/active', methods=['PATCH'])
-def update_user_active(user_id):
-    user = User.query.get_or_404(user_id)
-    data = request.get_json()
-    if 'isActive' not in data:
-        return jsonify({'error': 'مقدار isActive ارسال نشده است'}), 400
-    user.isActive = data['isActive']
-    db.session.commit()
-    log_action(user_id, "change_active_status", f"set isActive to {data['isActive']}")
-    return jsonify(user.to_dict())
-
 
 @app.route('/api/users/<int:user_id>', methods=['PATCH'])
-def patch_user(user_id):
+def update_user_active(user_id):
     user = User.query.get_or_404(user_id)
     data = request.get_json()
     if 'isActive' in data:
         user.isActive = data['isActive']
-    db.session.commit()
-    return jsonify(user.to_dict())
+        db.session.commit()
 
+        log_action(session.get('user_id', 0), "toggle_active", user_id, f"وضعیت کاربر به {'فعال' if user.isActive else 'غیرفعال'} تغییر کرد")
+        return jsonify(user.to_dict())
+    return jsonify({'error': 'پارامتر isActive ارسال نشده است'}), 400
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@login_required
 def delete_user(user_id):
     user = User.query.get_or_404(user_id)
     
     db.session.delete(user)
     db.session.commit()
     
+    log_action(session['user_id'], "delete_user", user_id, f"کاربر {user.name} حذف شد")
     return jsonify({'message': 'کاربر با موفقیت حذف شد'})
 
+@app.route('/api/logs', methods=['GET'])
+@login_required
+def get_logs():
+    logs = Log.query.order_by(Log.timestamp.desc()).all()
+    return jsonify([log.to_dict() for log in logs])
+
 def initialize_database():
-    db.create_all()
-    
-    if User.query.count() == 0:
-        sample_users = [
-            User(id=1, name="محمد امینی", age=28, city="تهران", job="برنامه‌نویس"),
-            User(id=2, name="سارا محمدی", age=34, city="اصفهان", job="طراح"),
-            User(id=3, name="علی رضایی", age=22, city="مشهد", job="مهندس"),
-            User(id=4, name="مریم کریمی", age=31, city="تبریز", job="پزشک"),
-            User(id=5, name="رضا حسینی", age=45, city="تهران", job="حسابدار"),
-            User(id=6, name="زهرا نوری", age=29, city="شیراز", job="مدیر"),
-            User(id=7, name="امیر قاسمی", age=37, city="اصفهان", job="معمار"),
-            User(id=8, name="نیلوفر احمدی", age=26, city="تهران", job="طراح"),
-            User(id=9, name="حسن فرهادی", age=33, city="مشهد", job="برنامه‌نویس"),
-            User(id=10, name="فاطمه شریفی", age=24, city="تبریز", job="مهندس"),
-            User(id=11, name="کامران جعفری", age=41, city="شیراز", job="مدیر"),
-            User(id=12, name="شیما صادقی", age=38, city="تهران", job="حسابدار"),
-        ]
+    with app.app_context():
+        db.create_all()
         
-        db.session.bulk_save_objects(sample_users)
-        db.session.commit()
+        if User.query.count() == 0:
+            sample_users = [
+                User(name="محمد امینی", age=28, city="تهران", job="برنامه‌نویس"),
+                User(name="سارا محمدی", age=34, city="اصفهان", job="طراح"),
+                User(name="علی رضایی", age=22, city="مشهد", job="مهندس"),
+                User(name="مریم کریمی", age=31, city="تبریز", job="پزشک"),
+                User(name="رضا حسینی", age=45, city="تهران", job="حسابدار"),
+            ]
+            
+            db.session.bulk_save_objects(sample_users)
+            db.session.commit()
+        
+        if AdminUser.query.count() == 0:
+            admin = AdminUser(
+                username="admin",
+                fullname="مدیر سیستم"
+            )
+            admin.set_password("admin123")
+            db.session.add(admin)
+            db.session.commit()
 
 @app.route('/')
 def home():
     return jsonify({"message": "به API کاربران خوش آمدید!"})
 
-# مشاهده لاگ‌ها
-@app.route('/api/logs', methods=['GET'])
-def get_logs():
-    logs = Log.query.order_by(Log.timestamp.desc()).all()
-    return jsonify([log.to_dict() for log in logs])    
-
 if __name__ == '__main__':
-    with app.app_context():
-        initialize_database()  
+    initialize_database()
     app.run(debug=True)

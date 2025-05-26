@@ -19,7 +19,7 @@ export default function DataTable() {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        const response = await fetch("http://127.0.0.1:5000/");
+        const response = await fetch("http://127.0.0.1:5000/api/users");
         if (response.ok) {
           setConnectionStatus('اتصال به سرور برقرار است');
           console.log('اتصال به سرور برقرار است');
@@ -36,7 +36,8 @@ export default function DataTable() {
      testConnection();
    }, []);
 
-  const fetchData = async () => {
+
+   const fetchData = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -74,6 +75,7 @@ export default function DataTable() {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line
   }, [currentPage, filters]);
 
   const goToPage = (page) => {
@@ -160,6 +162,7 @@ export default function DataTable() {
           <div className="input-icon">
             <input
               type="number"
+              min = "0"
               value={filters.age}
               onChange={(e) => handleFilterChange("age", e.target.value)}
             />
@@ -169,6 +172,10 @@ export default function DataTable() {
         <button className="clear-btn" onClick={clearFilters}>
           پاک کردن فیلترها    
         </button>
+
+        <Link to="/login" className="loging-user-btn">
+          ثبت نام
+        </Link>
 
         <Link to="/create-user" className="add-user-btn">
           افزودن کاربر

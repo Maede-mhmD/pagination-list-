@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import {Link} from "react-router-dom";
 import "./index.css";
 
 export default function CreateUserPage() {
@@ -23,6 +24,7 @@ export default function CreateUserPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify(formData),
       });
 
@@ -83,7 +85,11 @@ export default function CreateUserPage() {
           />
         </div>
         <button className="add-user-btn-submit" type="submit">افزودن</button>
+          <Link to="/" className="back-to-main-page">
+              بازگشت به صفحه اصلی
+          </Link>
       </form>
+      
       {message && <div className="add-user-message">{message}</div>}
     </div>
   );
